@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="MAIN" Id="{e1ada5b3-06a2-431c-b6ba-63b5365fbaf8}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+    bButtonStart    : BOOL;
+    bLampRun        : BOOL;
+    xCmdEjector     : BOOL;
+    xCmdClamp       : BOOL;
+    xCmdDiverter    : BOOL;
+    xCmdInfeed      : BOOL;
+    xCmdOutfeed     : BOOL;
+    iTrafficState   : INT;      // which step we're currently in
+    tonMachineTimer : TON;      // a built-in timer block
+    tonTimer        : TON;
+
+    bRed, bYellow, bGreen : BOOL;
+    iMachineState   : INT;      // separate state tracker, just for the machine sequence
+
+    fbEjector       : FB_Cylinder;
+    fbClamp         : FB_Cylinder;
+    fbDiverter      : FB_Cylinder;
+    fbInfeed        : FB_Cylinder;
+    fbOutfeed       : FB_Cylinder;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[fbEjector(bCommand := xCmdEjector, bSensorWork := GVL_IO.xEjectorWork, bSensorHome := GVL_IO.xEjectorHome,
+          bValveWork => GVL_IO.xValveEjectorWork, bValveHome => GVL_IO.xValveEjectorHome);
+
+fbClamp(bCommand := xCmdClamp, bSensorWork := GVL_IO.xClampWork, bSensorHome := GVL_IO.xClampHome,
+        bValveWork => GVL_IO.xValveClampWork, bValveHome => GVL_IO.xValveClampHome);
+
+fbDiverter(bCommand := xCmdDiverter, bSensorWork := GVL_IO.xDiverterWork, bSensorHome := GVL_IO.xDiverterHome,
+           bValveWork => GVL_IO.xValveDiverterWork, bValveHome => GVL_IO.xValveDiverterHome);
+
+fbInfeed(bCommand := xCmdInfeed, bSensorWork := GVL_IO.xInfeedWork, bSensorHome := GVL_IO.xInfeedHome,
+         bValveWork => GVL_IO.xValveInfeedWork, bValveHome => GVL_IO.xValveInfeedHome);
+
+fbOutfeed(bCommand := xCmdOutfeed, bSensorWork := GVL_IO.xOutfeedWork, bSensorHome := GVL_IO.xOutfeedHome,
+          bValveWork => GVL_IO.xValveOutfeedWork, bValveHome => GVL_IO.xValveOutfeedHome);
+
+CASE iTrafficState OF
+    0: // RED
+        bRed := TRUE; bYellow := FALSE; bGreen := FALSE;
+        tonTimer(IN := TRUE, PT := T#3S);
+        IF tonTimer.Q THEN
+            tonTimer(IN := FALSE);
+            iTrafficState := 1;
+        END_IF
+
+    1: // GREEN
+        bRed := FALSE; bYellow := FALSE; bGreen := TRUE;
+        tonTimer(IN := TRUE, PT := T#3S);
+        IF tonTimer.Q THEN
+            tonTimer(IN := FALSE);
+            iTrafficState := 2;
+        END_IF
+
+    2: // YELLOW
+        bRed := FALSE; bYellow := TRUE; bGreen := FALSE;
+        tonTimer(IN := TRUE, PT := T#1S);
+        IF tonTimer.Q THEN
+            tonTimer(IN := FALSE);
+            iTrafficState := 0; // back to RED
+        END_IF
+END_CASE
+
+CASE iMachineState OF
+    0: // WAIT FOR PART
+        xCmdInfeed := FALSE; // make sure Infeed stays unlocked while waiting
+        IF GVL_IO.xInfeedLightBarrier THEN // part detected
+            iMachineState := 1;
+        END_IF
+
+    1: // LOCK INFEED
+        xCmdInfeed := TRUE; // command Infeed to lock
+        IF fbInfeed.bSensorWork THEN // sensor confirms it's actually locked
+            iMachineState := 2;
+        END_IF
+
+    2: // CLAMP
+        xCmdClamp := TRUE; // command clamp to extend
+        IF fbClamp.bSensorWork THEN // sensor confirms clamped
+            iMachineState := 3;
+        END_IF
+
+    3: // WAIT (stand-in for the real process...)
+        tonMachineTimer(IN := TRUE, PT := T#2S);
+        IF tonMachineTimer.Q THEN
+            tonMachineTimer(IN := FALSE);
+            iMachineState := 4;
+        END_IF
+
+    4: // UNCLAMP
+        xCmdClamp := FALSE;
+        IF fbClamp.bSensorHome THEN // confirms fully retracted
+            iMachineState := 5;
+        END_IF
+
+    5: // ROUTE (for now, always send to the "good" path)
+        xCmdDiverter := FALSE; // FALSE = good path, TRUE = reject path (our choice)
+        IF fbDiverter.bSensorHome THEN
+            iMachineState := 6;
+        END_IF
+
+    6: // RELEASE INFEED, LOOP BACK
+        xCmdInfeed := FALSE;
+        IF fbInfeed.bSensorHome THEN
+            iMachineState := 0; // back to waiting for next part
+        END_IF
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

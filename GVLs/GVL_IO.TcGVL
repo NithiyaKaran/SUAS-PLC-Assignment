@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <GVL Name="GVL_IO" Id="{50af1805-e463-4e9f-b878-78f5d043fb3e}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL
+    // ===== INPUTS =====
+    xEjectorWork        AT %I* : BOOL;  // Ejector extended
+    xEjectorHome        AT %I* : BOOL;  // Ejector retracted
+    xClampWork          AT %I* : BOOL;
+    xClampHome          AT %I* : BOOL;
+    xDiverterWork       AT %I* : BOOL;
+    xDiverterHome       AT %I* : BOOL;
+    xInfeedWork         AT %I* : BOOL;
+    xInfeedHome         AT %I* : BOOL;
+    xOutfeedWork        AT %I* : BOOL;
+    xOutfeedHome        AT %I* : BOOL;
+    xInfeedLightBarrier AT %I* : BOOL;
+
+    // ===== OUTPUTS =====
+    xValveEjectorWork   AT %Q* : BOOL;
+    xValveEjectorHome   AT %Q* : BOOL;
+    xValveClampWork     AT %Q* : BOOL;
+    xValveClampHome     AT %Q* : BOOL;
+    xValveDiverterWork  AT %Q* : BOOL;
+    xValveDiverterHome  AT %Q* : BOOL;
+    xValveInfeedWork    AT %Q* : BOOL;
+    xValveInfeedHome    AT %Q* : BOOL;
+    xValveOutfeedWork   AT %Q* : BOOL;
+    xValveOutfeedHome   AT %Q* : BOOL;
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

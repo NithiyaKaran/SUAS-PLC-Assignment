@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_Cylinder" Id="{b489d2ed-b870-42bc-91a9-dc6808bbf9f2}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Cylinder
+VAR_INPUT
+    bCommand    : BOOL;  // TRUE = to extend, FALSE = to retract
+    bSensorWork : BOOL;  // real sensor: confirms extended
+    bSensorHome : BOOL;  // real sensor: confirms retracted
+END_VAR
+VAR_OUTPUT
+    bValveWork  : BOOL;  // drives the extend coil
+    bValveHome  : BOOL;  // drives the retract coil
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF bCommand THEN
+    bValveWork := TRUE;
+    bValveHome := FALSE;
+ELSE
+    bValveWork := FALSE;
+    bValveHome := TRUE;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>
