@@ -1,0 +1,17 @@
+.vs/
+*.suo
+*.user
+_Boot/
+_CompileInfo/
+_Libraries/
+*.tpy
+*.tmc
+*.tmcRefac
+*.compileinfo
+*.bootinfo
+*.bak
+*.~u
+LineIDs.dbg
+LineIDs.dbg.bak
+*.library
+*.compiled-library
